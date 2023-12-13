@@ -1,5 +1,8 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.13;
+pragma solidity 0.8.19;
+
+import "solady/src/utils/SafeTransferLib.sol";
+import "solady/src/utils/FixedPointMathLib.sol";
 
 /**
  * @title EigenZap
@@ -8,29 +11,37 @@ pragma solidity ^0.8.13;
  */
 contract EigenZap {
     // ------------------------------------------------------------------------
+    // Dependencies
+    // ------------------------------------------------------------------------
+
+    using SafeTransferLib for address;
+
+    using FixedPointMathLib for uint256;
+
+    // ------------------------------------------------------------------------
     // Immutables
     // ------------------------------------------------------------------------
 
-    /// @notice Immutable reference to the StrategyManager contract.
-    StrategyManager public immutable manager;
+    /// @notice Immutable reference to the EigenLayer StrategyManager contract.
+    StrategyManager public immutable STRATEGY_MANAGER;
 
     /// @notice Immutable reference to the stETH contract.
-    stETH public immutable stEth;
+    stETH public immutable LIDO_STAKED_ETH;
 
     /// @notice Immutable reference to the rETH contract.
-    rETH public immutable rEth;
+    rETH public immutable ROCKET_POOL_ETH;
 
     /// @notice Immutable reference to the Lido strategy contract.
-    address public immutable lidoStrategy;
+    address public immutable LIDO_ETH_STRATEGY;
 
     /// @notice Immutable reference to the Rocket strategy contract.
-    address public immutable rocketStrategy;
+    address public immutable ROCKET_POOL_ETH_STRATEGY;
 
     /// @notice Immutable reference to the RocketDepositPool contract.
-    RocketDepositPool public immutable rocketDepositPool;
+    RocketDepositPool public immutable ROCKET_DEPOSIT_POOL;
 
     /// @notice Immutable reference to the RocketDAOProtocolSettingsDeposit contract.
-    RocketDAOProtocolSettingsDeposit public immutable rocketSettingsDeposit;
+    RocketDAOProtocolSettingsDeposit public immutable ROCKET_DEPOSIT_SETTINGS;
 
     // ------------------------------------------------------------------------
     // Construction
@@ -38,38 +49,34 @@ contract EigenZap {
 
     /**
      * @dev Constructor initializes the contract with immutable references to various contracts.
-     * @param _manager The StrategyManager contract address.
-     * @param _stEth The stETH contract address.
-     * @param _rEth The rETH contract address.
-     * @param _lidoStrategy The Lido strategy contract address.
-     * @param _rocketStrategy The Rocket strategy contract address.
-     * @param _rocketDepositPool The RocketDepositPool contract address.
-     * @param _rocketSettingsDeposit The RocketDAOProtocolSettingsDeposit contract address.
+     * @param manager The StrategyManager contract address.
+     * @param stEth The stETH contract address.
+     * @param rEth The rETH contract address.
+     * @param lidoStrategy The Lido strategy contract address.
+     * @param rocketStrategy The Rocket strategy contract address.
+     * @param rocketDepositPool The RocketDepositPool contract address.
+     * @param rocketSettingsDeposit The RocketDAOProtocolSettingsDeposit contract address.
      */
     constructor(
-        StrategyManager _manager,
-        stETH _stEth,
-        rETH _rEth,
-        address _lidoStrategy,
-        address _rocketStrategy,
-        RocketDepositPool _rocketDepositPool,
-        RocketDAOProtocolSettingsDeposit _rocketSettingsDeposit
+        StrategyManager manager,
+        stETH stEth,
+        rETH rEth,
+        address lidoStrategy,
+        address rocketStrategy,
+        RocketDepositPool rocketDepositPool,
+        RocketDAOProtocolSettingsDeposit rocketSettingsDeposit
     ) {
-        manager = _manager;
-        stEth = _stEth;
-        rEth = _rEth;
-        rocketDepositPool = _rocketDepositPool;
-        lidoStrategy = _lidoStrategy;
-        rocketStrategy = _rocketStrategy;
-        rocketSettingsDeposit = _rocketSettingsDeposit;
+        STRATEGY_MANAGER = manager;
+        LIDO_STAKED_ETH = stEth;
+        ROCKET_POOL_ETH = rEth;
+        ROCKET_DEPOSIT_POOL = rocketDepositPool;
+        LIDO_ETH_STRATEGY = lidoStrategy;
+        ROCKET_POOL_ETH_STRATEGY = rocketStrategy;
+        ROCKET_DEPOSIT_SETTINGS = rocketSettingsDeposit;
 
-        // Approve maximum allowance for spending stETH and rETH by the manager contract.
-        ERC20Approve(address(_stEth)).approve(
-            address(_manager), type(uint256).max
-        );
-        ERC20Approve(address(_rEth)).approve(
-            address(_manager), type(uint256).max
-        );
+        // Approve maximum allowance for spending stETH and rETH by the STRATEGY_MANAGER contract.
+        address(stEth).safeApprove(address(manager), type(uint256).max);
+        address(rEth).safeApprove(address(manager), type(uint256).max);
     }
 
     // ------------------------------------------------------------------------
@@ -81,17 +88,17 @@ contract EigenZap {
      * @param expiry The expiration timestamp for the transaction.
      * @param signature The signature for the transaction.
      */
-    function zapIntoLido(uint256 expiry, bytes memory signature)
+    function zapIntoLido(uint256 expiry, bytes calldata signature)
         external
         payable
     {
         // 1) Deposit ETH into Lido to receive stETH.
-        stEth.submit{value: msg.value}(address(0));
+        LIDO_STAKED_ETH.submit{value: msg.value}(address(0));
 
         // 2) Deposit stETH into the strategy to receive EigenLayer shares.
-        manager.depositIntoStrategyWithSignature(
-            lidoStrategy,
-            address(stEth),
+        STRATEGY_MANAGER.depositIntoStrategyWithSignature(
+            LIDO_ETH_STRATEGY,
+            address(LIDO_STAKED_ETH),
             msg.value,
             msg.sender,
             expiry,
@@ -104,24 +111,29 @@ contract EigenZap {
      * @param expiry The expiration timestamp for the transaction.
      * @param signature The signature for the transaction.
      */
-    function zapIntoRocketPool(uint256 expiry, bytes memory signature)
+    function zapIntoRocketPool(uint256 expiry, bytes calldata signature)
         external
         payable
     {
         // 1) Deposit ETH into RocketPool to receive rETH.
-        rocketDepositPool.deposit{value: msg.value}();
+        ROCKET_DEPOSIT_POOL.deposit{value: msg.value}();
 
         // 2) Deposit RocketDepositPool into the strategy to receive EigenLayer shares.
-        manager.depositIntoStrategyWithSignature(
-            rocketStrategy,
-            address(rEth),
-            rEth.getRethValue(msg.value)
-                * (1e18 - rocketSettingsDeposit.getDepositFee()) / 1e18,
+        STRATEGY_MANAGER.depositIntoStrategyWithSignature(
+            ROCKET_POOL_ETH_STRATEGY,
+            address(ROCKET_POOL_ETH),
+            ROCKET_POOL_ETH.getRethValue(msg.value).mulWad(
+                uint256(1e18).rawSub(ROCKET_DEPOSIT_SETTINGS.getDepositFee())
+            ),
             msg.sender,
             expiry,
             signature
         );
     }
+
+    // ------------------------------------------------------------------------
+    // Helpers
+    // ------------------------------------------------------------------------
 
     /**
      * @dev Computes the digest for a given strategy deposit, used for signature verification.
@@ -142,7 +154,7 @@ contract EigenZap {
         return keccak256(
             abi.encodePacked(
                 "\x19\x01",
-                manager.DOMAIN_SEPARATOR(),
+                STRATEGY_MANAGER.DOMAIN_SEPARATOR(),
                 keccak256(
                     abi.encode(
                         keccak256(
@@ -193,13 +205,6 @@ abstract contract rETH {
         view
         virtual
         returns (uint256);
-}
-
-abstract contract ERC20Approve {
-    function approve(address spender, uint256 value)
-        external
-        virtual
-        returns (bool);
 }
 
 abstract contract RocketDepositPool {
