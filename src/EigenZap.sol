@@ -155,7 +155,7 @@ contract EigenZap {
         STRATEGY_MANAGER.depositIntoStrategyWithSignature(
             ROCKET_POOL_ETH_STRATEGY,
             address(ROCKET_POOL_ETH),
-            rEthValue.mulWad(rEthDepositFee),
+            rEthValue.mulWad(uint256(1e18).rawSub(rEthDepositFee)),
             msg.sender,
             expiry,
             signature

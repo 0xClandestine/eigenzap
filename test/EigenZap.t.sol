@@ -25,6 +25,7 @@ contract EigenZapTest is Test {
     EigenZap zap;
 
     function setUp() public {
+        // 17480446 is the last block eigen deposits haven't been paused, or at max tvl.
         vm.selectFork(vm.createFork("https://eth.llamarpc.com", 17480446));
 
         zap = new EigenZap(
@@ -88,6 +89,7 @@ contract EigenZapTest is Test {
     }
 
     function testZapIntoLido(uint88 amount) public {
+        vm.pauseGasMetering();
         vm.assume(amount > 0.1 ether);
         // Added due to max deposit constraints
         vm.assume(amount < 32 ether);
@@ -105,10 +107,11 @@ contract EigenZapTest is Test {
 
         vm.deal(signer, amount);
         vm.startPrank(vm.addr(key));
+        vm.resumeGasMetering();
         zap.zapIntoLido{value: amount}(
             block.timestamp, abi.encodePacked(r, s, v)
         );
-
+        vm.pauseGasMetering();
         // stETH shares are equal 1:1 to ETH, minus some precision loss.
         assertApproxEqAbs(
             STRATEGY_MANAGER.stakerStrategyShares(
@@ -119,9 +122,12 @@ contract EigenZapTest is Test {
         );
         assertEq(signer.balance, 0);
         assertEq(address(zap).balance, 0);
+        vm.resumeGasMetering();
     }
 
     function testZapIntoRocketPool(uint88 amount) public {
+        vm.pauseGasMetering();
+
         vm.assume(amount > 0.1 ether);
         // Added due to max deposit constraints
         vm.assume(amount < 32 ether);
@@ -142,11 +148,11 @@ contract EigenZapTest is Test {
 
         vm.deal(signer, amount);
         vm.startPrank(signer);
-
+        vm.resumeGasMetering();
         zap.zapIntoRocketPool{value: amount}(
             block.timestamp, abi.encodePacked(r, s, v)
         );
-
+        vm.pauseGasMetering();
         // rETH shares are not equal 1:1 to ETH.
         assertEq(
             STRATEGY_MANAGER.stakerStrategyShares(
@@ -156,15 +162,19 @@ contract EigenZapTest is Test {
         );
         assertEq(signer.balance, 0);
         assertEq(address(zap).balance, 0);
+        vm.resumeGasMetering();
     }
 
     function testZapIntoRocketPoolUnsafe(uint88 amount) public {
+        vm.pauseGasMetering();
+
         vm.assume(amount > 0.1 ether);
         // Added due to max deposit constraints
         vm.assume(amount < 32 ether);
 
-        uint256 expected = ROCKET_POOL_ETH.getRethValue(amount)
-            * (1e18 - ROCKET_DEPOSIT_SETTINGS.getDepositFee()) / 1e18;
+        uint256 rEthDepositFee = ROCKET_DEPOSIT_SETTINGS.getDepositFee();
+        uint256 expected =
+            ROCKET_POOL_ETH.getRethValue(amount) * (1e18 - rEthDepositFee) / 1e18;
 
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(
             key,
@@ -177,15 +187,15 @@ contract EigenZapTest is Test {
             )
         );
 
+        uint256 rEthValue = ROCKET_POOL_ETH.getRethValue(amount);
+
         vm.deal(signer, amount);
         vm.startPrank(signer);
-
+        vm.resumeGasMetering();
         zap.zapIntoRocketPoolUnsafe{value: amount}(
-            ROCKET_POOL_ETH.getRethValue(amount),
-            1e18 - ROCKET_DEPOSIT_SETTINGS.getDepositFee(),
-            block.timestamp,
-            abi.encodePacked(r, s, v)
+            rEthValue, rEthDepositFee, block.timestamp, abi.encodePacked(r, s, v)
         );
+        vm.pauseGasMetering();
 
         // rETH shares are not equal 1:1 to ETH.
         assertEq(
@@ -196,5 +206,6 @@ contract EigenZapTest is Test {
         );
         assertEq(signer.balance, 0);
         assertEq(address(zap).balance, 0);
+        vm.resumeGasMetering();
     }
 }
