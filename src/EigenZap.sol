@@ -18,7 +18,7 @@ contract EigenZap {
     stETH public immutable stEth;
 
     /// @notice Immutable reference to the rETH contract.
-    address public immutable rEth;
+    rETH public immutable rEth;
 
     /// @notice Immutable reference to the Lido strategy contract.
     address public immutable lidoStrategy;
@@ -49,7 +49,7 @@ contract EigenZap {
     constructor(
         StrategyManager _manager,
         stETH _stEth,
-        address _rEth,
+        rETH _rEth,
         address _lidoStrategy,
         address _rocketStrategy,
         RocketDepositPool _rocketDepositPool,
@@ -67,7 +67,7 @@ contract EigenZap {
         ERC20Approve(address(_stEth)).approve(
             address(_manager), type(uint256).max
         );
-        ERC20Approve(_rEth).approve(address(_manager), type(uint256).max);
+        ERC20Approve(address(_rEth)).approve(address(_manager), type(uint256).max);
     }
 
     // ------------------------------------------------------------------------
@@ -113,7 +113,7 @@ contract EigenZap {
         manager.depositIntoStrategyWithSignature(
             rocketStrategy,
             address(rEth),
-            msg.value * rocketSettingsDeposit.getDepositFee() / 1e18,
+            rEth.getRethValue(msg.value) * (1e18 - rocketSettingsDeposit.getDepositFee()) / 1e18,
             msg.sender,
             expiry,
             signature
@@ -167,6 +167,12 @@ abstract contract StrategyManager {
         bytes memory signature
     ) external virtual returns (uint256 shares);
 
+    function stakerStrategyShares(address account, address strategy)
+        external
+        view
+        virtual
+        returns (uint256);
+
     function DOMAIN_SEPARATOR() external view virtual returns (bytes32);
 }
 
@@ -174,6 +180,14 @@ abstract contract stETH {
     function submit(address referral)
         external
         payable
+        virtual
+        returns (uint256);
+}
+
+abstract contract rETH {
+    function getRethValue(uint256 ethAmount)
+        external
+        view
         virtual
         returns (uint256);
 }
