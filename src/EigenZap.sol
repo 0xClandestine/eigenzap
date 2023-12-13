@@ -90,8 +90,8 @@ contract EigenZap {
      */
     function zapIntoLido(uint256 expiry, bytes calldata signature)
         external
-        virtual
         payable
+        virtual
     {
         // 1) Deposit ETH into Lido to receive stETH.
         LIDO_STAKED_ETH.submit{value: msg.value}(address(0));
@@ -114,8 +114,8 @@ contract EigenZap {
      */
     function zapIntoRocketPool(uint256 expiry, bytes calldata signature)
         external
-        virtual
         payable
+        virtual
     {
         // 1) Deposit ETH into RocketPool to receive rETH.
         ROCKET_DEPOSIT_POOL.deposit{value: msg.value}();
@@ -134,14 +134,14 @@ contract EigenZap {
     }
 
     /**
-    * @notice Facilitates the transfer of funds into RocketPool to acquire EigenLayer shares.
-    * @param rEthValue The amount of ETH to be converted into rETH.
-    * @param rEthDepositFee The deposit fee for rETH.
-    * @param expiry The expiration timestamp for the transaction.
-    * @param signature The signature for the transaction.
-    *
-    * @dev Do not use this function unless you understand the ramifications.
-    */
+     * @notice Facilitates the transfer of funds into RocketPool to acquire EigenLayer shares.
+     * @param rEthValue The amount of ETH to be converted into rETH.
+     * @param rEthDepositFee The deposit fee for rETH.
+     * @param expiry The expiration timestamp for the transaction.
+     * @param signature The signature for the transaction.
+     *
+     * @dev Do not use this function unless you understand the ramifications.
+     */
     function zapIntoRocketPoolUnsafe(
         uint256 rEthValue,
         uint256 rEthDepositFee,
@@ -163,9 +163,9 @@ contract EigenZap {
     }
 
     /**
-    * @notice Recovers assets accidentally sent to this contract.
-    * @param asset The address of the asset to be recovered. Use address(0) for ETH.
-    */
+     * @notice Recovers assets accidentally sent to this contract.
+     * @param asset The address of the asset to be recovered. Use address(0) for ETH.
+     */
     function recover(address asset) external virtual {
         if (asset == address(0)) {
             msg.sender.safeTransferAllETH();
