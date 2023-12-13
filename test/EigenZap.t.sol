@@ -49,32 +49,45 @@ contract EigenZapTest is Test {
         vm.label(address(rocketSettingsDeposit), "rocketSettingsDeposit");
     }
 
-    function testZapIntoLido() public {
+    function testZapIntoLido(uint88 amount) public {
+        vm.assume(amount > 0.1 ether);
+        // Added due to max deposit constraints
+        vm.assume(amount < 32 ether);
+
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(
             key,
             zap.computeDigest(
                 address(lidoStrategy),
                 address(stEth),
-                1 ether,
+                amount,
                 0,
                 block.timestamp
             )
         );
 
-        vm.deal(signer, 1 ether);
+        vm.deal(signer, amount);
         vm.startPrank(vm.addr(key));
-        zap.zapIntoLido{value: 1 ether}(
+        zap.zapIntoLido{value: amount}(
             block.timestamp, abi.encodePacked(r, s, v)
         );
 
-        // stETH shares are equal 1:1 to ETH.
-        assertEq(
-            manager.stakerStrategyShares(signer, address(lidoStrategy)), 1 ether
+        // stETH shares are equal 1:1 to ETH, minus some precision loss.
+        assertApproxEqAbs(
+            manager.stakerStrategyShares(signer, address(lidoStrategy)),
+            amount,
+            100 wei
         );
+        assertEq(signer.balance, 0);
+        assertEq(address(zap).balance, 0);
     }
 
-    function testZapIntoRocketPool() public {
-        uint256 expected = rEth.getRethValue(1e18) * (1e18 - rocketSettingsDeposit.getDepositFee()) / 1e18;
+    function testZapIntoRocketPool(uint88 amount) public {
+        vm.assume(amount > 0.1 ether);
+        // Added due to max deposit constraints
+        vm.assume(amount < 32 ether);
+
+        uint256 expected = rEth.getRethValue(amount)
+            * (1e18 - rocketSettingsDeposit.getDepositFee()) / 1e18;
 
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(
             key,
@@ -87,14 +100,19 @@ contract EigenZapTest is Test {
             )
         );
 
-        vm.deal(signer, 1 ether);
+        vm.deal(signer, amount);
         vm.startPrank(signer);
 
-        zap.zapIntoRocketPool{value: 1 ether}(
+        zap.zapIntoRocketPool{value: amount}(
             block.timestamp, abi.encodePacked(r, s, v)
         );
 
         // rETH shares are not equal 1:1 to ETH.
-        assertEq(manager.stakerStrategyShares(signer, address(rocketStrategy)), expected);
+        assertEq(
+            manager.stakerStrategyShares(signer, address(rocketStrategy)),
+            expected
+        );
+        assertEq(signer.balance, 0);
+        assertEq(address(zap).balance, 0);
     }
 }

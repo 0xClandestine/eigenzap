@@ -67,7 +67,9 @@ contract EigenZap {
         ERC20Approve(address(_stEth)).approve(
             address(_manager), type(uint256).max
         );
-        ERC20Approve(address(_rEth)).approve(address(_manager), type(uint256).max);
+        ERC20Approve(address(_rEth)).approve(
+            address(_manager), type(uint256).max
+        );
     }
 
     // ------------------------------------------------------------------------
@@ -113,7 +115,8 @@ contract EigenZap {
         manager.depositIntoStrategyWithSignature(
             rocketStrategy,
             address(rEth),
-            rEth.getRethValue(msg.value) * (1e18 - rocketSettingsDeposit.getDepositFee()) / 1e18,
+            rEth.getRethValue(msg.value)
+                * (1e18 - rocketSettingsDeposit.getDepositFee()) / 1e18,
             msg.sender,
             expiry,
             signature
