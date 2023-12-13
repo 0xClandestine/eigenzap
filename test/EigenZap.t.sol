@@ -109,15 +109,48 @@ contract EigenZapTest is Test {
         vm.deal(signer, amount);
         vm.startPrank(signer);
 
-        // zap.zapIntoRocketPool{value: amount}(
-        //     ROCKET_POOL_ETH.getRethValue(amount),
-        //     1e18 - ROCKET_DEPOSIT_SETTINGS.getDepositFee(),
-        //     block.timestamp,
-        //     abi.encodePacked(r, s, v)
-        // );
-
         zap.zapIntoRocketPool{value: amount}(
             block.timestamp, abi.encodePacked(r, s, v)
+        );
+
+        // rETH shares are not equal 1:1 to ETH.
+        assertEq(
+            STRATEGY_MANAGER.stakerStrategyShares(
+                signer, address(ROCKET_POOL_ETH_STRATEGY)
+            ),
+            expected
+        );
+        assertEq(signer.balance, 0);
+        assertEq(address(zap).balance, 0);
+    }
+
+    function testZapIntoRocketPoolUnsafe(uint88 amount) public {
+        vm.assume(amount > 0.1 ether);
+        // Added due to max deposit constraints
+        vm.assume(amount < 32 ether);
+
+        uint256 expected = ROCKET_POOL_ETH.getRethValue(amount)
+            * (1e18 - ROCKET_DEPOSIT_SETTINGS.getDepositFee()) / 1e18;
+
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(
+            key,
+            zap.computeDigest(
+                address(ROCKET_POOL_ETH_STRATEGY),
+                address(ROCKET_POOL_ETH),
+                expected,
+                0,
+                block.timestamp
+            )
+        );
+
+        vm.deal(signer, amount);
+        vm.startPrank(signer);
+
+        zap.zapIntoRocketPoolUnsafe{value: amount}(
+            ROCKET_POOL_ETH.getRethValue(amount),
+            1e18 - ROCKET_DEPOSIT_SETTINGS.getDepositFee(),
+            block.timestamp,
+            abi.encodePacked(r, s, v)
         );
 
         // rETH shares are not equal 1:1 to ETH.
