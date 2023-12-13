@@ -109,6 +109,13 @@ contract EigenZapTest is Test {
         vm.deal(signer, amount);
         vm.startPrank(signer);
 
+        // zap.zapIntoRocketPool{value: amount}(
+        //     ROCKET_POOL_ETH.getRethValue(amount),
+        //     1e18 - ROCKET_DEPOSIT_SETTINGS.getDepositFee(),
+        //     block.timestamp,
+        //     abi.encodePacked(r, s, v)
+        // );
+
         zap.zapIntoRocketPool{value: amount}(
             block.timestamp, abi.encodePacked(r, s, v)
         );

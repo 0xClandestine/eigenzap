@@ -131,6 +131,35 @@ contract EigenZap {
         );
     }
 
+    /**
+    * @notice Facilitates the transfer of funds into RocketPool to acquire EigenLayer shares.
+    * @param rEthValue The amount of ETH to be converted into rETH.
+    * @param rEthDepositFee The deposit fee for rETH.
+    * @param expiry The expiration timestamp for the transaction.
+    * @param signature The signature for the transaction.
+    *
+    * @dev Do not use this function unless you understand the ramifications.
+    */
+    function zapIntoRocketPoolUnsafe(
+        uint256 rEthValue,
+        uint256 rEthDepositFee,
+        uint256 expiry,
+        bytes calldata signature
+    ) external payable {
+        // 1) Deposit ETH into RocketPool to receive rETH.
+        ROCKET_DEPOSIT_POOL.deposit{value: msg.value}();
+
+        // 2) Deposit RocketDepositPool into the strategy to receive EigenLayer shares.
+        STRATEGY_MANAGER.depositIntoStrategyWithSignature(
+            ROCKET_POOL_ETH_STRATEGY,
+            address(ROCKET_POOL_ETH),
+            rEthValue.mulWad(rEthDepositFee),
+            msg.sender,
+            expiry,
+            signature
+        );
+    }
+
     // ------------------------------------------------------------------------
     // Helpers
     // ------------------------------------------------------------------------
