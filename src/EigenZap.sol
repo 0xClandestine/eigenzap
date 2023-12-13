@@ -90,6 +90,7 @@ contract EigenZap {
      */
     function zapIntoLido(uint256 expiry, bytes calldata signature)
         external
+        virtual
         payable
     {
         // 1) Deposit ETH into Lido to receive stETH.
@@ -113,6 +114,7 @@ contract EigenZap {
      */
     function zapIntoRocketPool(uint256 expiry, bytes calldata signature)
         external
+        virtual
         payable
     {
         // 1) Deposit ETH into RocketPool to receive rETH.
@@ -145,7 +147,7 @@ contract EigenZap {
         uint256 rEthDepositFee,
         uint256 expiry,
         bytes calldata signature
-    ) external payable {
+    ) external payable virtual {
         // 1) Deposit ETH into RocketPool to receive rETH.
         ROCKET_DEPOSIT_POOL.deposit{value: msg.value}();
 
@@ -158,6 +160,18 @@ contract EigenZap {
             expiry,
             signature
         );
+    }
+
+    /**
+    * @notice Recovers assets accidentally sent to this contract.
+    * @param asset The address of the asset to be recovered. Use address(0) for ETH.
+    */
+    function recover(address asset) external virtual {
+        if (asset == address(0)) {
+            msg.sender.safeTransferAllETH();
+        }
+
+        asset.safeTransferAll(msg.sender);
     }
 
     // ------------------------------------------------------------------------
