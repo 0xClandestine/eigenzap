@@ -26,16 +26,16 @@ contract EigenZap {
     StrategyManager public immutable STRATEGY_MANAGER;
 
     /// @notice Immutable reference to the stETH contract.
-    stETH public immutable LIDO_STAKED_ETH;
+    stETH public immutable LIDO_ETH;
 
     /// @notice Immutable reference to the rETH contract.
-    rETH public immutable ROCKET_POOL_ETH;
+    rETH public immutable ROCKET_ETH;
 
     /// @notice Immutable reference to the Lido strategy contract.
     address public immutable LIDO_ETH_STRATEGY;
 
     /// @notice Immutable reference to the Rocket strategy contract.
-    address public immutable ROCKET_POOL_ETH_STRATEGY;
+    address public immutable ROCKET_ETH_STRATEGY;
 
     /// @notice Immutable reference to the RocketDepositPool contract.
     RocketDepositPool public immutable ROCKET_DEPOSIT_POOL;
@@ -67,11 +67,11 @@ contract EigenZap {
         RocketDAOProtocolSettingsDeposit rocketSettingsDeposit
     ) {
         STRATEGY_MANAGER = manager;
-        LIDO_STAKED_ETH = stEth;
-        ROCKET_POOL_ETH = rEth;
+        LIDO_ETH = stEth;
+        ROCKET_ETH = rEth;
         ROCKET_DEPOSIT_POOL = rocketDepositPool;
         LIDO_ETH_STRATEGY = lidoStrategy;
-        ROCKET_POOL_ETH_STRATEGY = rocketStrategy;
+        ROCKET_ETH_STRATEGY = rocketStrategy;
         ROCKET_DEPOSIT_SETTINGS = rocketSettingsDeposit;
 
         // Approve maximum allowance for spending stETH and rETH by the STRATEGY_MANAGER contract.
@@ -94,12 +94,12 @@ contract EigenZap {
         virtual
     {
         // 1) Deposit ETH into Lido to receive stETH.
-        LIDO_STAKED_ETH.submit{value: msg.value}(address(0));
+        LIDO_ETH.submit{value: msg.value}(address(0));
 
         // 2) Deposit stETH into the strategy to receive EigenLayer shares.
         STRATEGY_MANAGER.depositIntoStrategyWithSignature(
             LIDO_ETH_STRATEGY,
-            address(LIDO_STAKED_ETH),
+            address(LIDO_ETH),
             msg.value,
             msg.sender,
             expiry,
@@ -122,9 +122,9 @@ contract EigenZap {
 
         // 2) Deposit RocketDepositPool into the strategy to receive EigenLayer shares.
         STRATEGY_MANAGER.depositIntoStrategyWithSignature(
-            ROCKET_POOL_ETH_STRATEGY,
-            address(ROCKET_POOL_ETH),
-            ROCKET_POOL_ETH.getRethValue(msg.value).mulWad(
+            ROCKET_ETH_STRATEGY,
+            address(ROCKET_ETH),
+            ROCKET_ETH.getRethValue(msg.value).mulWad(
                 uint256(1e18).rawSub(ROCKET_DEPOSIT_SETTINGS.getDepositFee())
             ),
             msg.sender,

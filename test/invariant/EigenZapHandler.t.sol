@@ -35,7 +35,7 @@ contract EigenZapHandler is Test {
             key,
             target.computeDigest(
                 address(LIDO_STRATEGY),
-                address(LIDO_STAKED_ETH),
+                address(LIDO_ETH),
                 amount,
                 nonces[key]++,
                 expiry
@@ -68,7 +68,7 @@ contract EigenZapHandler is Test {
             key,
             target.computeDigest(
                 address(LIDO_STRATEGY),
-                address(LIDO_STAKED_ETH),
+                address(LIDO_ETH),
                 amount,
                 nonces[key]++,
                 expiry
@@ -84,7 +84,7 @@ contract EigenZapHandler is Test {
         );
 
         totalSharesOutRocket += STRATEGY_MANAGER.stakerStrategyShares(
-            signer, address(ROCKET_POOL_STRATEGY)
+            signer, address(ROCKET_STRATEGY)
         );
     }
 }

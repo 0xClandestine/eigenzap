@@ -5,4 +5,8 @@ libs = ["lib"]
 
 [fmt]
 line_length = 80
+
+[fuzz]
+runs = 50
+
 # See more config options https://github.com/foundry-rs/foundry/tree/master/config

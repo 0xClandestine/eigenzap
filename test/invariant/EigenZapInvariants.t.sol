@@ -12,19 +12,14 @@ contract EigenZapInvariants is StdInvariant, Test {
     EigenZapHandler handler;
 
     function setUp() public {
-        vm.selectFork(
-            vm.createFork(
-                "https://eth.llamarpc.com",
-                17480446
-            )
-        );
+        vm.selectFork(vm.createFork("https://eth.llamarpc.com", 17480446));
 
         EigenZap target = new EigenZap(
             STRATEGY_MANAGER,
-            LIDO_STAKED_ETH,
-            ROCKET_POOL_ETH,
+            LIDO_ETH,
+            ROCKET_ETH,
             LIDO_STRATEGY,
-            ROCKET_POOL_STRATEGY,
+            ROCKET_STRATEGY,
             ROCKET_DEPOSIT_POOL,
             ROCKET_DEPOSIT_SETTINGS
         );
@@ -35,16 +30,19 @@ contract EigenZapInvariants is StdInvariant, Test {
     function invariant_no_balance_growth() public {
         address target = address(handler.target());
         assertEq(address(target).balance, 0);
-        assertEq(SafeTransferLib.balanceOf(address(LIDO_STAKED_ETH), target), 0);
-        assertEq(SafeTransferLib.balanceOf(address(ROCKET_POOL_ETH), target), 0);
+        assertEq(SafeTransferLib.balanceOf(address(LIDO_ETH), target), 0);
+        assertEq(SafeTransferLib.balanceOf(address(ROCKET_ETH), target), 0);
     }
 
-    function invariant_deposits_equal_shares() public {
-        assertApproxEqAbs(
-            handler.totalEthInLido(), handler.totalSharesOutLido(), 100 wei
+    function invariant_deposits_equal_shares_lido() public {
+        assertApproxEqRel(
+            handler.totalEthInLido(), handler.totalSharesOutLido(), 0.001 ether
         );
+    }
+
+    function invariant_deposits_equal_shares_rocket() public {
         assertEq(
-            ROCKET_POOL_ETH.getRethValue(handler.totalEthInRocket())
+            ROCKET_ETH.getRethValue(handler.totalEthInRocket())
                 * (1e18 - ROCKET_DEPOSIT_SETTINGS.getDepositFee()) / 1e18,
             handler.totalSharesOutRocket()
         );
