@@ -35,8 +35,8 @@ contract EigenZapInvariants is StdInvariant, Test {
     }
 
     function invariant_deposits_equal_shares_lido() public {
-        assertApproxEqRel(
-            handler.totalEthInLido(), handler.totalSharesOutLido(), 0.025 ether
+        assertApproxEqAbs(
+            handler.totalEthInLido(), handler.totalSharesOutLido(), 10_000 wei
         );
     }
 

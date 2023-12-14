@@ -31,13 +31,6 @@ The contract is constructed with references to the immutable addresses of the ab
   1. Deposit ETH into Rocket Pool to receive rETH.
   2. Deposit rETH into the strategy to receive EigenLayer shares.
 
-#### Zap into Rocket Pool (Unsafe)
-- Function: `zapIntoRocketPoolUnsafe`
-- Action:
-  1. Deposit ETH into Rocket Pool to receive rETH.
-  2. Deposit rETH into the strategy to receive EigenLayer shares.
-  *Note: Unsafe, understand the ramifications before use.*
-
 ### Helpers
 
 #### Compute Digest
@@ -48,8 +41,7 @@ The contract is constructed with references to the immutable addresses of the ab
 
 1. Deploy the EigenZap contract with the addresses of the required dependencies.
 2. Call `zapIntoLido` or `zapIntoRocketPool` with the desired amount of ETH, expiration timestamp, and signature.
-3. Optionally, use `zapIntoRocketPoolUnsafe` with caution, ensuring a full understanding of its implications.
-4. Check the acquired EigenLayer shares in the respective strategies.
+3. Check the acquired EigenLayer shares in the respective strategies.
 
 ## License
 
