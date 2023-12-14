@@ -1,0 +1,17 @@
+// SPDX-License-Identifier: MIT
+pragma solidity 0.8.19;
+
+import "src/EigenZap.sol";
+
+StrategyManager constant STRATEGY_MANAGER =
+    StrategyManager(0x858646372CC42E1A627fcE94aa7A7033e7CF075A);
+stETH constant LIDO_STAKED_ETH =
+    stETH(0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84);
+rETH constant ROCKET_POOL_ETH = rETH(0xae78736Cd615f374D3085123A210448E74Fc6393);
+address constant LIDO_STRATEGY = 0x93c4b944D05dfe6df7645A86cd2206016c51564D;
+address constant ROCKET_POOL_STRATEGY =
+    0x1BeE69b7dFFfA4E2d53C2a2Df135C388AD25dCD2;
+RocketDepositPool constant ROCKET_DEPOSIT_POOL =
+    RocketDepositPool(0xDD3f50F8A6CafbE9b31a427582963f465E745AF8);
+RocketDAOProtocolSettingsDeposit constant ROCKET_DEPOSIT_SETTINGS =
+    RocketDAOProtocolSettingsDeposit(0xac2245BE4C2C1E9752499Bcd34861B761d62fC27);

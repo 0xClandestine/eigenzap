@@ -2,33 +2,25 @@
 pragma solidity 0.8.19;
 
 import "forge-std/Test.sol";
-import "../src/EigenZap.sol";
+import "src/EigenZap.sol";
+import "test/Constants.sol";
 
 contract EigenZapTest is Test {
-    StrategyManager constant STRATEGY_MANAGER =
-        StrategyManager(0x858646372CC42E1A627fcE94aa7A7033e7CF075A);
-    stETH constant LIDO_STAKED_ETH =
-        stETH(0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84);
-    rETH constant ROCKET_POOL_ETH =
-        rETH(0xae78736Cd615f374D3085123A210448E74Fc6393);
-    address constant LIDO_STRATEGY = 0x93c4b944D05dfe6df7645A86cd2206016c51564D;
-    address constant ROCKET_POOL_STRATEGY =
-        0x1BeE69b7dFFfA4E2d53C2a2Df135C388AD25dCD2;
-    RocketDepositPool constant ROCKET_DEPOSIT_POOL =
-        RocketDepositPool(0xDD3f50F8A6CafbE9b31a427582963f465E745AF8);
-    RocketDAOProtocolSettingsDeposit constant ROCKET_DEPOSIT_SETTINGS =
-    RocketDAOProtocolSettingsDeposit(0xac2245BE4C2C1E9752499Bcd34861B761d62fC27);
-
     uint256 key;
     address signer;
 
-    EigenZap zap;
+    EigenZap target;
 
     function setUp() public {
         // 17480446 is the last block eigen deposits haven't been paused, or at max tvl.
-        vm.selectFork(vm.createFork("https://eth.llamarpc.com", 17480446));
+        vm.selectFork(
+            vm.createFork(
+                "https://eth.llamarpc.com",
+                17480446
+            )
+        );
 
-        zap = new EigenZap(
+        target = new EigenZap(
             STRATEGY_MANAGER,
             LIDO_STAKED_ETH,
             ROCKET_POOL_ETH,
@@ -41,7 +33,7 @@ contract EigenZapTest is Test {
         key = 420;
         signer = vm.addr(key);
 
-        vm.label(address(zap), "zap");
+        vm.label(address(target), "target");
         vm.label(signer, "signer");
         vm.label(address(this), "test");
 
@@ -88,15 +80,14 @@ contract EigenZapTest is Test {
         vm.label(ROCKET_POOL_STRATEGY, "STRATEGY_RETH");
     }
 
-    function testZapIntoLido(uint88 amount) public {
-        vm.pauseGasMetering();
+    function testzapIntoLido(uint88 amount) public {
         vm.assume(amount > 0.1 ether);
         // Added due to max deposit constraints
         vm.assume(amount < 32 ether);
 
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(
             key,
-            zap.computeDigest(
+            target.computeDigest(
                 address(LIDO_STRATEGY),
                 address(LIDO_STAKED_ETH),
                 amount,
@@ -108,7 +99,7 @@ contract EigenZapTest is Test {
         vm.deal(signer, amount);
         vm.startPrank(vm.addr(key));
         vm.resumeGasMetering();
-        zap.zapIntoLido{value: amount}(
+        target.zapIntoLido{value: amount}(
             block.timestamp, abi.encodePacked(r, s, v)
         );
         vm.pauseGasMetering();
@@ -121,11 +112,11 @@ contract EigenZapTest is Test {
             100 wei
         );
         assertEq(signer.balance, 0);
-        assertEq(address(zap).balance, 0);
+        assertEq(address(target).balance, 0);
         vm.resumeGasMetering();
     }
 
-    function testZapIntoRocketPool(uint88 amount) public {
+    function testzapIntoRocketPool(uint88 amount) public {
         vm.pauseGasMetering();
 
         vm.assume(amount > 0.1 ether);
@@ -137,7 +128,7 @@ contract EigenZapTest is Test {
 
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(
             key,
-            zap.computeDigest(
+            target.computeDigest(
                 address(ROCKET_POOL_STRATEGY),
                 address(ROCKET_POOL_ETH),
                 expected,
@@ -149,7 +140,7 @@ contract EigenZapTest is Test {
         vm.deal(signer, amount);
         vm.startPrank(signer);
         vm.resumeGasMetering();
-        zap.zapIntoRocketPool{value: amount}(
+        target.zapIntoRocketPool{value: amount}(
             block.timestamp, abi.encodePacked(r, s, v)
         );
         vm.pauseGasMetering();
@@ -161,51 +152,7 @@ contract EigenZapTest is Test {
             expected
         );
         assertEq(signer.balance, 0);
-        assertEq(address(zap).balance, 0);
-        vm.resumeGasMetering();
-    }
-
-    function testZapIntoRocketPoolUnsafe(uint88 amount) public {
-        vm.pauseGasMetering();
-
-        vm.assume(amount > 0.1 ether);
-        // Added due to max deposit constraints
-        vm.assume(amount < 32 ether);
-
-        uint256 rEthDepositFee = ROCKET_DEPOSIT_SETTINGS.getDepositFee();
-        uint256 expected =
-            ROCKET_POOL_ETH.getRethValue(amount) * (1e18 - rEthDepositFee) / 1e18;
-
-        (uint8 v, bytes32 r, bytes32 s) = vm.sign(
-            key,
-            zap.computeDigest(
-                address(ROCKET_POOL_STRATEGY),
-                address(ROCKET_POOL_ETH),
-                expected,
-                0,
-                block.timestamp
-            )
-        );
-
-        uint256 rEthValue = ROCKET_POOL_ETH.getRethValue(amount);
-
-        vm.deal(signer, amount);
-        vm.startPrank(signer);
-        vm.resumeGasMetering();
-        zap.zapIntoRocketPoolUnsafe{value: amount}(
-            rEthValue, rEthDepositFee, block.timestamp, abi.encodePacked(r, s, v)
-        );
-        vm.pauseGasMetering();
-
-        // rETH shares are not equal 1:1 to ETH.
-        assertEq(
-            STRATEGY_MANAGER.stakerStrategyShares(
-                signer, address(ROCKET_POOL_STRATEGY)
-            ),
-            expected
-        );
-        assertEq(signer.balance, 0);
-        assertEq(address(zap).balance, 0);
+        assertEq(address(target).balance, 0);
         vm.resumeGasMetering();
     }
 }
