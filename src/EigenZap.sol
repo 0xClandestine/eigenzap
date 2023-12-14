@@ -87,6 +87,8 @@ contract EigenZap {
      * @notice Facilitates the transfer of funds into Lido to acquire EigenLayer shares.
      * @param expiry The expiration timestamp for the transaction.
      * @param signature The signature for the transaction.
+     *
+     * @dev There is a small amount of precision loss when depositing into Lido.
      */
     function zapIntoLido(uint256 expiry, bytes memory signature)
         external
@@ -108,7 +110,7 @@ contract EigenZap {
     }
 
     /**
-     * @dev Facilitates the transfer of funds into RocketPool to acquire EigenLayer shares.
+     * @notice Facilitates the transfer of funds into RocketPool to acquire EigenLayer shares.
      * @param expiry The expiration timestamp for the transaction.
      * @param signature The signature for the transaction.
      */
