@@ -37,6 +37,12 @@ The contract is constructed with references to the immutable addresses of the ab
 - Function: `computeDigest`
 - Purpose: Computes the digest for a given strategy deposit for signature verification.
 
+#### Asset Recovery
+- Function: `recover`
+- Purpose: Recovers assets accidentally sent to this contract.
+- Parameters:
+  - `asset`: The address of the asset to be recovered. Use address(0) for ETH.
+
 ## Usage
 
 1. Deploy the EigenZap contract with the addresses of the required dependencies.
