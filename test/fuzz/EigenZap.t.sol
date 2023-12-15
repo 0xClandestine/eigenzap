@@ -35,7 +35,7 @@ contract EigenZapTest is Test {
         label();
     }
 
-    function testzapIntoLido(uint88 amount) public {
+    function test_ZapIntoLido(uint88 amount) public {
         vm.assume(amount > 0.1 ether);
         // Added due to max deposit constraints
         vm.assume(amount < 32 ether);
@@ -71,7 +71,7 @@ contract EigenZapTest is Test {
         vm.resumeGasMetering();
     }
 
-    function testzapIntoRocketPool(uint88 amount) public {
+    function test_ZapIntoRocketPool(uint88 amount) public {
         vm.pauseGasMetering();
 
         vm.assume(amount > 0.1 ether);
