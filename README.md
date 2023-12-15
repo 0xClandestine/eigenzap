@@ -31,17 +31,17 @@ The contract is constructed with references to the immutable addresses of the ab
   1. Deposit ETH into Rocket Pool to receive rETH.
   2. Deposit rETH into the strategy to receive EigenLayer shares.
 
-### Helpers
-
-#### Compute Digest
-- Function: `computeDigest`
-- Purpose: Computes the digest for a given strategy deposit for signature verification.
-
 #### Asset Recovery
 - Function: `recover`
 - Purpose: Recovers assets accidentally sent to this contract.
 - Parameters:
   - `asset`: The address of the asset to be recovered. Use address(0) for ETH.
+
+### Helpers
+
+#### Compute Digest
+- Function: `computeDigest`
+- Purpose: Computes the digest for a given strategy deposit for signature verification.
 
 ## Usage
 
