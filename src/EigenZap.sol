@@ -23,7 +23,7 @@ contract EigenZap {
     // ------------------------------------------------------------------------
 
     /// @notice Immutable reference to the EigenLayer StrategyManager contract.
-    StrategyManager public immutable STRATEGY_MANAGER;
+    StrategyManager public immutable EIGEN_STRATEGY_MANAGER;
 
     /// @notice Immutable reference to the stETH contract.
     stETH public immutable LIDO_ETH;
@@ -66,7 +66,7 @@ contract EigenZap {
         RocketDepositPool rocketDepositPool,
         RocketDAOProtocolSettingsDeposit rocketSettingsDeposit
     ) {
-        STRATEGY_MANAGER = manager;
+        EIGEN_STRATEGY_MANAGER = manager;
         LIDO_ETH = stEth;
         ROCKET_ETH = rEth;
         ROCKET_DEPOSIT_POOL = rocketDepositPool;
@@ -74,7 +74,7 @@ contract EigenZap {
         ROCKET_ETH_STRATEGY = rocketStrategy;
         ROCKET_DEPOSIT_SETTINGS = rocketSettingsDeposit;
 
-        // Approve maximum allowance for spending stETH and rETH by the STRATEGY_MANAGER contract.
+        // Approve maximum allowance for spending stETH and rETH by the EIGEN_STRATEGY_MANAGER contract.
         address(stEth).safeApprove(address(manager), type(uint256).max);
         address(rEth).safeApprove(address(manager), type(uint256).max);
     }
@@ -90,22 +90,13 @@ contract EigenZap {
      *
      * @dev There is a small amount of precision loss when depositing into Lido.
      */
-    function zapIntoLido(uint256 expiry, bytes memory signature)
-        external
-        payable
-        virtual
-    {
+    function zapIntoLido(uint256 expiry, bytes memory signature) external payable virtual {
         // 1) Deposit ETH into Lido to receive stETH.
         LIDO_ETH.submit{value: msg.value}(address(0));
 
         // 2) Deposit stETH into the strategy to receive EigenLayer shares.
-        STRATEGY_MANAGER.depositIntoStrategyWithSignature(
-            LIDO_ETH_STRATEGY,
-            address(LIDO_ETH),
-            msg.value,
-            msg.sender,
-            expiry,
-            signature
+        EIGEN_STRATEGY_MANAGER.depositIntoStrategyWithSignature(
+            LIDO_ETH_STRATEGY, address(LIDO_ETH), msg.value, msg.sender, expiry, signature
         );
     }
 
@@ -114,16 +105,12 @@ contract EigenZap {
      * @param expiry The expiration timestamp for the transaction.
      * @param signature The signature for the transaction.
      */
-    function zapIntoRocketPool(uint256 expiry, bytes memory signature)
-        external
-        payable
-        virtual
-    {
+    function zapIntoRocketPool(uint256 expiry, bytes memory signature) external payable virtual {
         // 1) Deposit ETH into RocketPool to receive rETH.
         ROCKET_DEPOSIT_POOL.deposit{value: msg.value}();
 
         // 2) Deposit RocketDepositPool into the strategy to receive EigenLayer shares.
-        STRATEGY_MANAGER.depositIntoStrategyWithSignature(
+        EIGEN_STRATEGY_MANAGER.depositIntoStrategyWithSignature(
             ROCKET_ETH_STRATEGY,
             address(ROCKET_ETH),
             ROCKET_ETH.getRethValue(msg.value).mulWad(
@@ -170,7 +157,7 @@ contract EigenZap {
         return keccak256(
             abi.encodePacked(
                 "\x19\x01",
-                STRATEGY_MANAGER.DOMAIN_SEPARATOR(),
+                EIGEN_STRATEGY_MANAGER.DOMAIN_SEPARATOR(),
                 keccak256(
                     abi.encode(
                         keccak256(
@@ -208,19 +195,11 @@ abstract contract StrategyManager {
 }
 
 abstract contract stETH {
-    function submit(address referral)
-        external
-        payable
-        virtual
-        returns (uint256);
+    function submit(address referral) external payable virtual returns (uint256);
 }
 
 abstract contract rETH {
-    function getRethValue(uint256 ethAmount)
-        external
-        view
-        virtual
-        returns (uint256);
+    function getRethValue(uint256 ethAmount) external view virtual returns (uint256);
 }
 
 abstract contract RocketDepositPool {

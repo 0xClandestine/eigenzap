@@ -4,7 +4,7 @@ out = "out"
 libs = ["lib"]
 
 [fmt]
-line_length = 80
+line_length = 100
 
 [fuzz]
 runs = 50

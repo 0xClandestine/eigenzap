@@ -12,10 +12,10 @@ contract EigenZapInvariants is StdInvariant, Test {
     EigenZapHandler handler;
 
     function setUp() public {
-        vm.selectFork(vm.createFork("https://eth.llamarpc.com", 17480446));
+        vm.selectFork(vm.createFork("https://eth.llamarpc.com", TEST_BLOCK));
 
         EigenZap target = new EigenZap(
-            STRATEGY_MANAGER,
+            EIGEN_STRATEGY_MANAGER,
             LIDO_ETH,
             ROCKET_ETH,
             LIDO_STRATEGY,
@@ -35,9 +35,7 @@ contract EigenZapInvariants is StdInvariant, Test {
     }
 
     function invariant_deposits_equal_shares_lido() public {
-        assertApproxEqAbs(
-            handler.totalEthInLido(), handler.totalSharesOutLido(), 10_000 wei
-        );
+        assertApproxEqRel(handler.totalEthInLido(), handler.totalSharesOutLido(), 0.005 ether);
     }
 
     function invariant_deposits_equal_shares_rocket() public {

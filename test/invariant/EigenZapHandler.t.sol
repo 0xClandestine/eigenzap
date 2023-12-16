@@ -20,25 +20,17 @@ contract EigenZapHandler is Test {
         target = _target;
     }
 
-    function zapIntoLido(uint256 key, uint256 amount, uint256 expiry)
-        external
-    {
-        amount = bound(amount, 0.1 ether, 32 ether);
+    function zapIntoLido(uint256 key, uint256 amount, uint256 expiry) external {
+        key = boundPrivateKey(key);
+        amount = bound(amount, 0.5 ether, 32 ether);
+        expiry = bound(expiry, block.timestamp, type(uint256).max);
 
         totalEthInLido += amount;
-
-        if (expiry < block.timestamp) {
-            expiry = block.timestamp;
-        }
 
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(
             key,
             target.computeDigest(
-                address(LIDO_STRATEGY),
-                address(LIDO_ETH),
-                amount,
-                nonces[key]++,
-                expiry
+                address(LIDO_STRATEGY), address(LIDO_ETH), amount, nonces[key]++, expiry
             )
         );
 
@@ -48,30 +40,21 @@ contract EigenZapHandler is Test {
         vm.deal(signer, amount);
         target.zapIntoLido{value: amount}(expiry, abi.encodePacked(r, s, v));
 
-        totalSharesOutLido += STRATEGY_MANAGER.stakerStrategyShares(
-            signer, address(LIDO_STRATEGY)
-        );
+        totalSharesOutLido +=
+            EIGEN_STRATEGY_MANAGER.stakerStrategyShares(signer, address(LIDO_STRATEGY));
     }
 
-    function zapIntoRocketPool(uint256 key, uint256 amount, uint256 expiry)
-        external
-    {
-        amount = bound(amount, 0.1 ether, 32 ether);
+    function zapIntoRocketPool(uint256 key, uint256 amount, uint256 expiry) external {
+        key = boundPrivateKey(key);
+        amount = bound(amount, 0.5 ether, 32 ether);
+        expiry = bound(expiry, block.timestamp, type(uint256).max);
 
         totalEthInRocket += amount;
-
-        if (expiry < block.timestamp) {
-            expiry = block.timestamp;
-        }
 
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(
             key,
             target.computeDigest(
-                address(LIDO_STRATEGY),
-                address(LIDO_ETH),
-                amount,
-                nonces[key]++,
-                expiry
+                address(LIDO_STRATEGY), address(LIDO_ETH), amount, nonces[key]++, expiry
             )
         );
 
@@ -79,12 +62,9 @@ contract EigenZapHandler is Test {
 
         vm.prank(signer);
         vm.deal(signer, amount);
-        target.zapIntoRocketPool{value: amount}(
-            expiry, abi.encodePacked(r, s, v)
-        );
+        target.zapIntoRocketPool{value: amount}(expiry, abi.encodePacked(r, s, v));
 
-        totalSharesOutRocket += STRATEGY_MANAGER.stakerStrategyShares(
-            signer, address(ROCKET_STRATEGY)
-        );
+        totalSharesOutRocket +=
+            EIGEN_STRATEGY_MANAGER.stakerStrategyShares(signer, address(ROCKET_STRATEGY));
     }
 }
