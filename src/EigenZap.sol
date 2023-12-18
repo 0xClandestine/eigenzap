@@ -32,10 +32,10 @@ contract EigenZap {
     rETH public immutable ROCKET_ETH;
 
     /// @notice Immutable reference to the Lido strategy contract.
-    address public immutable LIDO_ETH_STRATEGY;
+    address public immutable LIDO_STRATEGY;
 
     /// @notice Immutable reference to the Rocket strategy contract.
-    address public immutable ROCKET_ETH_STRATEGY;
+    address public immutable ROCKET_STRATEGY;
 
     /// @notice Immutable reference to the RocketDepositPool contract.
     RocketDepositPool public immutable ROCKET_DEPOSIT_POOL;
@@ -70,8 +70,8 @@ contract EigenZap {
         LIDO_ETH = stEth;
         ROCKET_ETH = rEth;
         ROCKET_DEPOSIT_POOL = rocketDepositPool;
-        LIDO_ETH_STRATEGY = lidoStrategy;
-        ROCKET_ETH_STRATEGY = rocketStrategy;
+        LIDO_STRATEGY = lidoStrategy;
+        ROCKET_STRATEGY = rocketStrategy;
         ROCKET_DEPOSIT_SETTINGS = rocketSettingsDeposit;
 
         // Approve maximum allowance for spending stETH and rETH by the EIGEN_STRATEGY_MANAGER contract.
@@ -96,7 +96,7 @@ contract EigenZap {
 
         // 2) Deposit stETH into the strategy to receive EigenLayer shares.
         EIGEN_STRATEGY_MANAGER.depositIntoStrategyWithSignature(
-            LIDO_ETH_STRATEGY, address(LIDO_ETH), msg.value, msg.sender, expiry, signature
+            LIDO_STRATEGY, address(LIDO_ETH), msg.value, msg.sender, expiry, signature
         );
     }
 
@@ -111,7 +111,7 @@ contract EigenZap {
 
         // 2) Deposit RocketDepositPool into the strategy to receive EigenLayer shares.
         EIGEN_STRATEGY_MANAGER.depositIntoStrategyWithSignature(
-            ROCKET_ETH_STRATEGY,
+            ROCKET_STRATEGY,
             address(ROCKET_ETH),
             ROCKET_ETH.getRethValue(msg.value).mulWad(
                 uint256(1e18).rawSub(ROCKET_DEPOSIT_SETTINGS.getDepositFee())
