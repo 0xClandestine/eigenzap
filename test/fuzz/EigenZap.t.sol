@@ -8,6 +8,7 @@ import "test/Constants.sol";
 contract EigenZapTest is Test {
     uint256 key;
     address signer;
+    uint256 rocketDepositFee;
 
     EigenZap target;
 
@@ -28,63 +29,55 @@ contract EigenZapTest is Test {
         key = 420;
         signer = vm.addr(key);
 
-        vm.label(address(target), "target");
-        vm.label(signer, "signer");
-        vm.label(address(this), "test");
+        vm.label(address(target), "EIGEN_ZAP");
+        vm.label(signer, "EIGEN_ZAP_SIGNER");
+        vm.label(address(this), "EIGEN_ZAP_TEST");
+
+        rocketDepositFee = ROCKET_DEPOSIT_SETTINGS.getDepositFee();
 
         label();
     }
 
-    function test_ZapIntoLido(uint256 amount) public {
+    function test_ZapIntoLido(uint256 amount, uint256 expiry) public {
         vm.pauseGasMetering();
         amount = bound(amount, 0.1 ether, 32 ether);
+        expiry = bound(expiry, block.timestamp, type(uint256).max);
 
-        (uint8 v, bytes32 r, bytes32 s) = vm.sign(
-            key,
-            target.computeDigest(
-                address(LIDO_STRATEGY), address(LIDO_ETH), amount, 0, block.timestamp
-            )
-        );
+        (uint8 v, bytes32 r, bytes32 s) =
+            vm.sign(key, target.computeDigest(LIDO_STRATEGY, address(LIDO_ETH), amount, 0, expiry));
 
         vm.deal(signer, amount);
         vm.startPrank(vm.addr(key));
         vm.resumeGasMetering();
-        target.zapIntoLido{value: amount}(block.timestamp, abi.encodePacked(r, s, v));
+        target.zapIntoLido{value: amount}(expiry, abi.encodePacked(r, s, v));
         vm.pauseGasMetering();
         // stETH shares are equal 1:1 to ETH, minus some precision loss.
         assertApproxEqRel(
-            EIGEN_STRATEGY_MANAGER.stakerStrategyShares(signer, address(LIDO_STRATEGY)),
-            amount,
-            0.005 ether
+            EIGEN_STRATEGY_MANAGER.stakerStrategyShares(signer, LIDO_STRATEGY), amount, 0.005 ether
         );
         assertEq(signer.balance, 0);
         assertEq(address(target).balance, 0);
         vm.resumeGasMetering();
     }
 
-    function test_ZapIntoRocketPool(uint256 amount) public {
+    function test_ZapIntoRocketPool(uint256 amount, uint256 expiry) public {
         vm.pauseGasMetering();
         amount = bound(amount, 0.1 ether, 32 ether);
+        expiry = bound(expiry, block.timestamp, type(uint256).max);
 
-        uint256 expected = ROCKET_ETH.getRethValue(amount)
-            * (1e18 - ROCKET_DEPOSIT_SETTINGS.getDepositFee()) / 1e18;
+        uint256 expected = ROCKET_ETH.getRethValue(amount) * (1e18 - rocketDepositFee) / 1e18;
 
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(
-            key,
-            target.computeDigest(
-                address(ROCKET_STRATEGY), address(ROCKET_ETH), expected, 0, block.timestamp
-            )
+            key, target.computeDigest(ROCKET_STRATEGY, address(ROCKET_ETH), expected, 0, expiry)
         );
 
         vm.deal(signer, amount);
         vm.startPrank(signer);
         vm.resumeGasMetering();
-        target.zapIntoRocketPool{value: amount}(block.timestamp, abi.encodePacked(r, s, v));
+        target.zapIntoRocketPool{value: amount}(expiry, abi.encodePacked(r, s, v));
         vm.pauseGasMetering();
         // rETH shares are not equal 1:1 to ETH.
-        assertEq(
-            EIGEN_STRATEGY_MANAGER.stakerStrategyShares(signer, address(ROCKET_STRATEGY)), expected
-        );
+        assertEq(EIGEN_STRATEGY_MANAGER.stakerStrategyShares(signer, ROCKET_STRATEGY), expected);
         assertEq(signer.balance, 0);
         assertEq(address(target).balance, 0);
         vm.resumeGasMetering();

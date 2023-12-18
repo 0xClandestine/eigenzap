@@ -40,8 +40,7 @@ contract EigenZapHandler is Test {
         vm.deal(signer, amount);
         target.zapIntoLido{value: amount}(expiry, abi.encodePacked(r, s, v));
 
-        totalSharesOutLido +=
-            EIGEN_STRATEGY_MANAGER.stakerStrategyShares(signer, address(LIDO_STRATEGY));
+        totalSharesOutLido += EIGEN_STRATEGY_MANAGER.stakerStrategyShares(signer, LIDO_STRATEGY);
     }
 
     function zapIntoRocketPool(uint256 key, uint256 amount, uint256 expiry) external {
@@ -64,7 +63,6 @@ contract EigenZapHandler is Test {
         vm.deal(signer, amount);
         target.zapIntoRocketPool{value: amount}(expiry, abi.encodePacked(r, s, v));
 
-        totalSharesOutRocket +=
-            EIGEN_STRATEGY_MANAGER.stakerStrategyShares(signer, address(ROCKET_STRATEGY));
+        totalSharesOutRocket += EIGEN_STRATEGY_MANAGER.stakerStrategyShares(signer, ROCKET_STRATEGY);
     }
 }

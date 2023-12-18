@@ -11,6 +11,8 @@ import "src/EigenZap.sol";
 contract EigenZapInvariants is StdInvariant, Test {
     EigenZapHandler handler;
 
+    uint256 rocketDepositFee;
+
     function setUp() public {
         vm.selectFork(vm.createFork("https://eth.llamarpc.com", TEST_BLOCK));
 
@@ -25,6 +27,7 @@ contract EigenZapInvariants is StdInvariant, Test {
         );
 
         handler = new EigenZapHandler(target);
+        rocketDepositFee = ROCKET_DEPOSIT_SETTINGS.getDepositFee();
     }
 
     function invariant_no_balance_growth() public {
@@ -40,8 +43,7 @@ contract EigenZapInvariants is StdInvariant, Test {
 
     function invariant_deposits_equal_shares_rocket() public {
         assertEq(
-            ROCKET_ETH.getRethValue(handler.totalEthInRocket())
-                * (1e18 - ROCKET_DEPOSIT_SETTINGS.getDepositFee()) / 1e18,
+            ROCKET_ETH.getRethValue(handler.totalEthInRocket()) * (1e18 - rocketDepositFee) / 1e18,
             handler.totalSharesOutRocket()
         );
     }
